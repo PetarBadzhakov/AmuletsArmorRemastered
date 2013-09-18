@@ -92,7 +92,7 @@ static T_buttonID ButtonInit(
     T_buttonStruct *myID;
 
     DebugRoutine("ButtonInit");
-    DebugCheck(lx<=320 && ly<=200);
+    DebugCheck(lx<=SCREEN_WIDTH && ly<=200);
     DebugCheck(bmname!=NULL);
 
     size = sizeof(T_buttonStruct);

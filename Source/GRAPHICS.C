@@ -91,12 +91,18 @@ static T_void IResetLeftsAndRights(T_void) ;
 
 static T_byte8 G_lastPalette[256][3] ;
 
+#if (SCREEN_WIDTH==320)
+#define PIXEL_OFFSET_Y(y)  ((y<<6)+(y<<8))
+#else
+#define PIXEL_OFFSET_Y(y)  ((y)*(SCREEN_WIDTH))
+#endif
+
 /*-------------------------------------------------------------------------*
  * Routine:  GrScreenAlloc
  *-------------------------------------------------------------------------*/
 /**
  *  This routine is needed to allocate enough space for a screen.
- *  Although this current implementation only allocates a 320x200 region,
+ *  Although this current implementation only allocates a SCREEN_WIDTHxSREEN_HEIGHT region,
  *  future versions may wish to provide different size screens.
  *  To actually use this screen, you need to use GrScreenSet().  It
  *  will then make that screen the active screen.
@@ -110,9 +116,9 @@ T_screen GrScreenAlloc(T_void)
 
     DebugRoutine("GrScreenAlloc") ;
 
-    /* Allocate enough memory for a 320x200 area. */
-    screen = MemAlloc((T_word16)(320*200)) ;
-    memset(screen, 0, 320*200) ;
+    /* Allocate enough memory for a SCREEN_WIDTHxSREEN_HEIGHT area. */
+    screen = MemAlloc((T_word32)(SCREEN_WIDTH*SCREEN_HEIGHT)) ;
+    memset(screen, 0, SCREEN_WIDTH*SCREEN_HEIGHT) ;
     DebugCheck(screen != NULL) ;
 
     DebugEnd() ;
@@ -205,8 +211,8 @@ T_screen GrScreenGet(T_void)
 T_void GrDrawPixel(T_word16 x, T_word16 y, T_color color)
 {
     DebugRoutine("GrDrawPixel") ;
-    DebugCheck(x < 320) ;
-    DebugCheck(y < 200) ;
+    DebugCheck(x < SCREEN_WIDTH) ;
+    DebugCheck(y < SCREEN_HEIGHT) ;
 
     GrInvalidateRect(
         x,
@@ -215,7 +221,7 @@ T_void GrDrawPixel(T_word16 x, T_word16 y, T_color color)
         y) ;
 
     /* Draw a dot on the active screen at the (x,y) location. */
-    G_ActiveScreen[(y<<8) + (y<<6) + x] = color ;
+    G_ActiveScreen[PIXEL_OFFSET_Y(y) + x] = color ;
 
     DebugEnd() ;
 }
@@ -225,8 +231,8 @@ T_void GrDrawTranslucentPixel(T_word16 x, T_word16 y, T_color color)
     T_byte8 *p_destination;
 
     DebugRoutine("GrDrawTranslucentPixel") ;
-    DebugCheck(x < 320) ;
-    DebugCheck(y < 200) ;
+    DebugCheck(x < SCREEN_WIDTH) ;
+    DebugCheck(y < SCREEN_HEIGHT) ;
 
     GrInvalidateRect(
         x,
@@ -234,7 +240,7 @@ T_void GrDrawTranslucentPixel(T_word16 x, T_word16 y, T_color color)
         x,
         y) ;
 
-    p_destination = G_ActiveScreen + (y<<8) + (y<<6) + x;
+    p_destination = G_ActiveScreen + PIXEL_OFFSET_Y(y) + x;
 
     /* Draw a dot on the active screen at the (x,y) location. */
     *p_destination = G_translucentTable[color][*p_destination];
@@ -268,8 +274,8 @@ T_void GrDrawVerticalLine(
     T_byte8 *p_dot ;
 
     DebugRoutine("GrDrawVerticalLine") ;
-    DebugCheck(x < 320) ;
-    DebugCheck(y_bottom < 200) ;
+    DebugCheck(x < SCREEN_WIDTH) ;
+    DebugCheck(y_bottom < SCREEN_HEIGHT) ;
     DebugCheck(y_top <= y_bottom) ;
 
     GrInvalidateRect(
@@ -279,10 +285,10 @@ T_void GrDrawVerticalLine(
         y_bottom) ;
 
     /* Find a pointer to the start point on the active screen. */
-    p_dot = G_ActiveScreen+(y_top<<8)+(y_top<<6)+x ;
+    p_dot = G_ActiveScreen+PIXEL_OFFSET_Y(y_top)+x ;
 
     /* Loop through each pixel and draw a dot for each line. */
-    for (y_pos = y_top; y_pos <= y_bottom; y_pos++, p_dot += 320)
+    for (y_pos = y_top; y_pos <= y_bottom; y_pos++, p_dot += SCREEN_WIDTH)
         *p_dot = color ;
 
     DebugEnd() ;
@@ -315,8 +321,8 @@ T_void GrDrawHorizontalLine(
            T_color color)
 {
     DebugRoutine("GrDrawHorizontalLine") ;
-    DebugCheck(y < 200) ;
-    DebugCheck(x_right < 320) ;
+    DebugCheck(y < SCREEN_HEIGHT) ;
+    DebugCheck(x_right < SCREEN_WIDTH) ;
     DebugCheck(x_left <= x_right) ;
 
     GrInvalidateRect(
@@ -326,7 +332,7 @@ T_void GrDrawHorizontalLine(
         y) ;
     /* Find a pointer to the start point on the active screen and set */
     /* a group of sequence bytes to the color. */
-    memset(G_ActiveScreen+(y<<8)+(y<<6)+x_left,
+    memset(G_ActiveScreen+PIXEL_OFFSET_Y(y)+x_left,
            color,
            1+x_right-x_left) ;
 
@@ -389,10 +395,10 @@ T_void GrDrawBitmap(
     T_word16 x_size ;
 
     DebugRoutine("GrDrawBitmap") ;
-    DebugCheck(x_left < 320) ;
-    DebugCheck(y_top < 200) ;
-    DebugCheck(x_left+p_bitmap->sizex <= 320) ;
-    DebugCheck(y_top+p_bitmap->sizey <= 200) ;
+    DebugCheck(x_left < SCREEN_WIDTH) ;
+    DebugCheck(y_top < SCREEN_HEIGHT) ;
+    DebugCheck(x_left+p_bitmap->sizex <= SCREEN_WIDTH) ;
+    DebugCheck(y_top+p_bitmap->sizey <= SCREEN_HEIGHT) ;
 
     GrInvalidateRect(
         x_left,
@@ -400,7 +406,7 @@ T_void GrDrawBitmap(
         x_left+p_bitmap->sizex,
         y_top+p_bitmap->sizey) ;
 
-    p_screen = G_ActiveScreen+(y_top<<8)+(y_top<<6)+x_left ;
+    p_screen = G_ActiveScreen+PIXEL_OFFSET_Y(y_top)+x_left ;
     p_bitmapData = p_bitmap->data ;
     x_size = p_bitmap->sizex ;
 
@@ -411,7 +417,7 @@ T_void GrDrawBitmap(
         memcpy(p_screen, p_bitmapData, x_size) ;
 
         /* Skip down to the next screen line. */
-        p_screen += 320 ;
+        p_screen += SCREEN_WIDTH ;
 
         /* Skip down to the next bitmap line. */
         p_bitmapData += x_size ;
@@ -455,10 +461,10 @@ T_void GrDrawShadedBitmap(
     T_byte8 *p_shadeLookup ;
 
     DebugRoutine("GrDrawShadedBitmap") ;
-    DebugCheck(x_left < 320) ;
-    DebugCheck(y_top < 200) ;
-    DebugCheck(x_left+p_bitmap->sizex <= 320) ;
-    DebugCheck(y_top+p_bitmap->sizey <= 200) ;
+    DebugCheck(x_left < SCREEN_WIDTH) ;
+    DebugCheck(y_top < SCREEN_HEIGHT) ;
+    DebugCheck(x_left+p_bitmap->sizex <= SCREEN_WIDTH) ;
+    DebugCheck(y_top+p_bitmap->sizey <= SCREEN_HEIGHT) ;
 
     GrInvalidateRect(
         x_left,
@@ -466,7 +472,7 @@ T_void GrDrawShadedBitmap(
         x_left+p_bitmap->sizex,
         y_top+p_bitmap->sizey) ;
 
-    p_screen = G_ActiveScreen+(y_top<<8)+(y_top<<6)+x_left ;
+    p_screen = G_ActiveScreen+PIXEL_OFFSET_Y(y_top)+x_left ;
     p_bitmapData = p_bitmap->data ;
     x_size = p_bitmap->sizex ;
 
@@ -480,7 +486,7 @@ T_void GrDrawShadedBitmap(
             p_screen[x] = p_shadeLookup[p_bitmapData[x]] ;
 
         /* Skip down to the next screen line. */
-        p_screen += 320 ;
+        p_screen += SCREEN_WIDTH ;
 
         /* Skip down to the next bitmap line. */
         p_bitmapData += x_size ;
@@ -504,10 +510,10 @@ T_void GrDrawShadedAndMaskedBitmap(
     T_byte8 *p_shadeLookup ;
 
     DebugRoutine("GrDrawShadedBitmap") ;
-    DebugCheck(x_left < 320) ;
-    DebugCheck(y_top < 200) ;
-    DebugCheck(x_left+p_bitmap->sizex <= 320) ;
-    DebugCheck(y_top+p_bitmap->sizey <= 200) ;
+    DebugCheck(x_left < SCREEN_WIDTH) ;
+    DebugCheck(y_top < SCREEN_HEIGHT) ;
+    DebugCheck(x_left+p_bitmap->sizex <= SCREEN_WIDTH) ;
+    DebugCheck(y_top+p_bitmap->sizey <= SCREEN_HEIGHT) ;
 
     GrInvalidateRect(
         x_left,
@@ -515,7 +521,7 @@ T_void GrDrawShadedAndMaskedBitmap(
         x_left+p_bitmap->sizex,
         y_top+p_bitmap->sizey) ;
 
-    p_screen = G_ActiveScreen+(y_top<<8)+(y_top<<6)+x_left ;
+    p_screen = G_ActiveScreen+PIXEL_OFFSET_Y(y_top)+x_left ;
     p_bitmapData = p_bitmap->data ;
     x_size = p_bitmap->sizex ;
 
@@ -532,7 +538,7 @@ T_void GrDrawShadedAndMaskedBitmap(
         }
 
         /* Skip down to the next screen line. */
-        p_screen += 320 ;
+        p_screen += SCREEN_WIDTH ;
 
         /* Skip down to the next bitmap line. */
         p_bitmapData += x_size ;
@@ -571,10 +577,10 @@ T_void GrDrawBitmapMasked(
     T_word16 x_size ;
 
     DebugRoutine("GrDrawBitmapMasked") ;
-    DebugCheck(x_left < 320) ;
-    DebugCheck(y_top < 200) ;
-    DebugCheck(x_left+p_bitmap->sizex <= 320) ;
-    DebugCheck(y_top+p_bitmap->sizey <= 200) ;
+    DebugCheck(x_left < SCREEN_WIDTH) ;
+    DebugCheck(y_top < SCREEN_HEIGHT) ;
+    DebugCheck(x_left+p_bitmap->sizex <= SCREEN_WIDTH) ;
+    DebugCheck(y_top+p_bitmap->sizey <= SCREEN_HEIGHT) ;
 
     GrInvalidateRect(
         x_left,
@@ -582,7 +588,7 @@ T_void GrDrawBitmapMasked(
         x_left+p_bitmap->sizex,
         y_top+p_bitmap->sizey) ;
 
-    p_screen = G_ActiveScreen+(y_top<<8)+(y_top<<6)+x_left ;
+    p_screen = G_ActiveScreen+PIXEL_OFFSET_Y(y_top)+x_left ;
     p_bitmapData = p_bitmap->data ;
     x_size = p_bitmap->sizex ;
 
@@ -605,7 +611,7 @@ T_void GrDrawBitmapMasked(
         }
 
         /* Skip down to the next screen line. */
-        p_screen += 320 ;
+        p_screen += SCREEN_WIDTH ;
 
         /* Skip down to the next bitmap line. */
         p_bitmapData += x_size ;
@@ -655,9 +661,9 @@ T_void GrTransferRectangle(
 
     DebugRoutine("GrTransferRectangle") ;
     DebugCheck(destination != G_ActiveScreen) ;
-    DebugCheck(x_right < 320) ;
+    DebugCheck(x_right < SCREEN_WIDTH) ;
     DebugCheck(x_left <= x_right) ;
-    DebugCheck(y_bottom < 200) ;
+    DebugCheck(y_bottom < SCREEN_HEIGHT) ;
     DebugCheck(y_top <= y_bottom) ;
 
     if (destination == GRAPHICS_ACTUAL_SCREEN)
@@ -672,14 +678,14 @@ T_void GrTransferRectangle(
     width = x_right - x_left + 1 ;
     height = y_bottom - y_top + 1 ;
 
-    DebugCheck(dest_x+width <= 320) ;
-    DebugCheck(dest_y+height <= 200) ;
+    DebugCheck(dest_x+width <= SCREEN_WIDTH) ;
+    DebugCheck(dest_y+height <= SCREEN_HEIGHT) ;
 
     /* Find the starting point of where we are going to copy from. */
-    p_screenFrom = G_ActiveScreen+(y_top<<8)+(y_top<<6)+x_left ;
+    p_screenFrom = G_ActiveScreen+PIXEL_OFFSET_Y(y_top)+x_left ;
 
     /* Find the starting point of where we are going to transfer to. */
-    p_screenTo = destination+(dest_y<<8)+(dest_y<<6)+dest_x;
+    p_screenTo = destination+PIXEL_OFFSET_Y(dest_y)+dest_x;
 
     /* Loop through each line in the rectangle. */
     for (; height>0; height--)  {
@@ -688,8 +694,8 @@ T_void GrTransferRectangle(
         memcpy(p_screenTo, p_screenFrom, width) ;
 
         /* Update our line positions. */
-        p_screenFrom += 320 ;
-        p_screenTo += 320 ;
+        p_screenFrom += SCREEN_WIDTH ;
+        p_screenTo += SCREEN_WIDTH ;
     }
 
 //    IConfirmPaletteChange() ;
@@ -816,7 +822,7 @@ T_void GrDisplayScreen(T_void)
     DebugCheck(G_ActiveScreen != GRAPHICS_ACTUAL_SCREEN) ;
 
     /* Memcpy is usually written to be VERY fast by the C compiler/library. */
-    memcpy(GRAPHICS_ACTUAL_SCREEN, G_ActiveScreen, (T_word16)(320*200)) ;
+    memcpy(GRAPHICS_ACTUAL_SCREEN, G_ActiveScreen, (T_word16)(SCREEN_WIDTH*SCREEN_HEIGHT)) ;
 
     DebugEnd() ;
 }
@@ -852,9 +858,9 @@ T_void GrDrawRectangle(
     T_byte8 *p_screen ;
 
     DebugRoutine("GrDrawRectangle") ;
-    DebugCheck(x_right < 320) ;
+    DebugCheck(x_right < SCREEN_WIDTH) ;
     DebugCheck(x_left <= x_right) ;
-    DebugCheck(y_bottom < 200) ;
+    DebugCheck(y_bottom < SCREEN_HEIGHT) ;
     DebugCheck(y_top <= y_bottom) ;
 
     GrInvalidateRect(
@@ -866,10 +872,10 @@ T_void GrDrawRectangle(
     height = y_bottom-y_top+1 ;
 
     /* Find the starting point of where we are going to fill. */
-    p_screen = G_ActiveScreen+(y_top<<8)+(y_top<<6)+x_left ;
+    p_screen = G_ActiveScreen+PIXEL_OFFSET_Y(y_top)+x_left ;
 
     /* Loop through each line and fill those lines. */
-    for (; height > 0; height--, p_screen+=320)
+    for (; height > 0; height--, p_screen+=SCREEN_WIDTH)
         memset(p_screen, color, width) ;
 
     DebugEnd() ;
@@ -901,9 +907,9 @@ T_void GrDrawFrame(
            T_color color)
 {
     DebugRoutine("GrDrawFrame") ;
-    DebugCheck(x_right < 320) ;
+    DebugCheck(x_right < SCREEN_WIDTH) ;
     DebugCheck(x_left <= x_right) ;
-    DebugCheck(y_bottom < 200) ;
+    DebugCheck(y_bottom < SCREEN_HEIGHT) ;
     DebugCheck(y_top <= y_bottom) ;
 
     GrInvalidateRect(
@@ -951,9 +957,9 @@ T_void GrDrawShadedFrame(
            T_color color2)
 {
     DebugRoutine("GrDrawShadedFrame") ;
-    DebugCheck(x_right < 320) ;
+    DebugCheck(x_right < SCREEN_WIDTH) ;
     DebugCheck(x_left <= x_right) ;
-    DebugCheck(y_bottom < 200) ;
+    DebugCheck(y_bottom < SCREEN_HEIGHT) ;
     DebugCheck(y_top <= y_bottom) ;
 
     GrInvalidateRect(
@@ -1251,8 +1257,8 @@ T_void GrSetBitFont(T_bitfont *p_bitfont)
 T_void GrSetCursorPosition(T_word16 x_position, T_word16 y_position)
 {
     DebugRoutine("GrSetCursorPosition") ;
-    DebugCheck(x_position < 320) ;
-    DebugCheck(y_position < 200) ;
+    DebugCheck(x_position < SCREEN_WIDTH) ;
+    DebugCheck(y_position < SCREEN_HEIGHT) ;
 
     G_cursorXPosition = x_position ;
     G_cursorYPosition = y_position ;
@@ -1307,7 +1313,7 @@ T_void GrDrawCharacter(T_byte8 character, T_color color)
     width = G_CurrentBitFont->widths[character] ;
     height = G_CurrentBitFont->height ;
 
-    if (G_cursorXPosition+width >= 320)  {
+    if (G_cursorXPosition+width >= SCREEN_WIDTH)  {
         /* We are too far to the right, let's move down to the next line. */
         G_cursorXPosition = 0 ;
         G_cursorYPosition += height ;
@@ -1315,13 +1321,12 @@ T_void GrDrawCharacter(T_byte8 character, T_color color)
 
     /* If the current character will go off the bottom, roll */
     /* around to the top. */
-    if (G_cursorYPosition+height >= 200)
+    if (G_cursorYPosition+height >= SCREEN_HEIGHT)
         G_cursorYPosition = 0;
 
     /* Ok, now we have room to draw the character. */
     /* Find a pointer to the current position for the character. */
-    p_line = G_ActiveScreen+(G_cursorYPosition<<8)+
-                            (G_cursorYPosition<<6)+
+    p_line = G_ActiveScreen+PIXEL_OFFSET_Y(G_cursorYPosition)+
                             G_cursorXPosition ;
 
     GrInvalidateRect(
@@ -1343,7 +1348,7 @@ T_void GrDrawCharacter(T_byte8 character, T_color color)
                 *p_dot = color ;
         }
         p_font_character++ ;
-        p_line+=320 ;
+        p_line+=SCREEN_WIDTH ;
     }
 
     /* Now update the x position of the character.  Since we know that */
@@ -1480,7 +1485,7 @@ T_void GrTransferRasterFrom(
     if (length+x >= SCREEN_SIZE_X)
         length = SCREEN_SIZE_X-x ;
 
-    memcpy(G_ActiveScreen+(y<<6)+(y<<8)+x, whereFrom, length) ;
+    memcpy(G_ActiveScreen+PIXEL_OFFSET_Y(y)+x, whereFrom, length) ;
 
     DebugEnd() ;
 }
@@ -1520,7 +1525,7 @@ T_void GrTransferRasterTo(
     if (length+x >= SCREEN_SIZE_X)
         length = SCREEN_SIZE_X-x ;
 
-    memcpy(whereTo, G_ActiveScreen+(y<<6)+(y<<8)+x, length) ;
+    memcpy(whereTo, G_ActiveScreen+PIXEL_OFFSET_Y(y)+x, length) ;
 
     DebugEnd() ;
 }
@@ -1564,8 +1569,8 @@ T_void GrInvertVerticalLine(
     T_byte8 *p_dot ;
 
     DebugRoutine("GrInvertVerticalLine") ;
-    DebugCheck(x < 320) ;
-    DebugCheck(y_bottom < 200) ;
+    DebugCheck(x < SCREEN_WIDTH) ;
+    DebugCheck(y_bottom < SCREEN_HEIGHT) ;
     DebugCheck(y_top <= y_bottom) ;
 
     GrInvalidateRect(
@@ -1575,10 +1580,10 @@ T_void GrInvertVerticalLine(
         y_bottom) ;
 
     /* Find a pointer to the start point on the active screen. */
-    p_dot = G_ActiveScreen+(y_top<<8)+(y_top<<6)+x ;
+    p_dot = G_ActiveScreen+PIXEL_OFFSET_Y(y_top)+x ;
 
     /* Loop through each pixel and invert a dot for each line. */
-    for (y_pos = y_top; y_pos <= y_bottom; y_pos++, p_dot += 320)
+    for (y_pos = y_top; y_pos <= y_bottom; y_pos++, p_dot += SCREEN_WIDTH)
         *p_dot = *p_dot ^ 0xFF ;
 
     DebugEnd() ;
@@ -1609,8 +1614,8 @@ T_void GrInvertHorizontalLine(
     T_byte8 *p_dot ;
 
     DebugRoutine("GrInvertHorizontalLine") ;
-    DebugCheck(y < 200) ;
-    DebugCheck(x_right < 320) ;
+    DebugCheck(y < SCREEN_HEIGHT) ;
+    DebugCheck(x_right < SCREEN_WIDTH) ;
     DebugCheck(x_left <= x_right) ;
 
     GrInvalidateRect(
@@ -1619,7 +1624,7 @@ T_void GrInvertHorizontalLine(
         x_right,
         y) ;
     /* Find a pointer to the start point on the active screen. */
-    p_dot = G_ActiveScreen+(y<<8)+(y<<6)+x_left ;
+    p_dot = G_ActiveScreen+PIXEL_OFFSET_Y(y)+x_left ;
 
     /* Loop through each pixel and invert a dot for each column. */
     for (x_pos = x_left; x_pos <= x_right; x_pos++, p_dot++)
@@ -1652,9 +1657,9 @@ T_void GrInvertFrame(
            T_word16 y_bottom)
 {
     DebugRoutine("GrInvertFrame") ;
-    DebugCheck(x_right < 320) ;
+    DebugCheck(x_right < SCREEN_WIDTH) ;
     DebugCheck(x_left <= x_right) ;
-    DebugCheck(y_bottom < 200) ;
+    DebugCheck(y_bottom < SCREEN_HEIGHT) ;
     DebugCheck(y_top <= y_bottom) ;
 
     GrInvalidateRect(
@@ -1775,9 +1780,9 @@ T_void GrDrawLine(
     }
     fract_y = 0 ;
 
-    offset = y1*320 + x1 ;
+    offset = y1*SCREEN_WIDTH + x1 ;
     p_screen[offset] = color ;
-    ystep = diry * 320 ;
+    ystep = diry * SCREEN_WIDTH ;
 
     if (step_x > step_y)  {
         while (x1 != x2)  {
@@ -1849,23 +1854,23 @@ T_void GrDoubleSizeTransfer(
 
     DebugRoutine("GrDoubleSizeTransfer") ;
     DebugCheck(destination != G_ActiveScreen) ;
-    DebugCheck(x_right < 320) ;
+    DebugCheck(x_right < SCREEN_WIDTH) ;
     DebugCheck(x_left <= x_right) ;
-    DebugCheck(y_bottom < 200) ;
+    DebugCheck(y_bottom < SCREEN_HEIGHT) ;
     DebugCheck(y_top <= y_bottom) ;
 
     /* Calculate the width and height of this rectangle. */
     width = x_right - x_left + 1 ;
     height = y_bottom - y_top + 1 ;
 
-    DebugCheck(dest_x+width <= 320) ;
-    DebugCheck(dest_y+height <= 200) ;
+    DebugCheck(dest_x+width <= SCREEN_WIDTH) ;
+    DebugCheck(dest_y+height <= SCREEN_HEIGHT) ;
 
     /* Find the starting point of where we are going to copy from. */
-    p_screenFrom = G_ActiveScreen+(y_top<<8)+(y_top<<6)+x_left ;
+    p_screenFrom = G_ActiveScreen+PIXEL_OFFSET_Y(y_top)+x_left ;
 
     /* Find the starting point of where we are going to transfer to. */
-    p_screenTo = destination+(dest_y<<8)+(dest_y<<6)+dest_x;
+    p_screenTo = destination+PIXEL_OFFSET_Y(dest_y)+dest_x;
 
     /* Loop through each line in the rectangle. */
     for (; height>0; height--)  {
@@ -1878,9 +1883,9 @@ T_void GrDoubleSizeTransfer(
                 *(p_screenTo2++) = b ;
                 *(p_screenTo2++) = b ;
             }
-            p_screenTo += 320 ;
+            p_screenTo += SCREEN_WIDTH ;
         }
-        p_screenFrom += 320 ;
+        p_screenFrom += SCREEN_WIDTH ;
     }
 
     DebugEnd() ;
@@ -1924,12 +1929,12 @@ T_void GrDrawCompressedBitmap(
     DebugRoutine("GrDrawCompressedBitmap") ;
 
     DebugCheck(p_bitmap != NULL) ;
-    DebugCheck(x_left < 320) ;
-    DebugCheck(y_top < 200) ;
+    DebugCheck(x_left < SCREEN_WIDTH) ;
+    DebugCheck(y_top < SCREEN_HEIGHT) ;
     /* NOTE:  It may look backward, but since it is rotated, */
     /* sizeX is sizeY and visa-versa. */
-    DebugCheck(x_left+p_bitmap->sizey <= 320) ;
-    DebugCheck(y_top+p_bitmap->sizex <= 200) ;
+    DebugCheck(x_left+p_bitmap->sizey <= SCREEN_WIDTH) ;
+    DebugCheck(y_top+p_bitmap->sizex <= SCREEN_HEIGHT) ;
 
     GrInvalidateRectClipped(
         x_left,
@@ -1954,7 +1959,7 @@ T_void GrDrawCompressedBitmap(
 
             /* Where on the screen does it go next? */
             y_start = y_top + p_entry->start ;
-            p_screen = G_ActiveScreen+(y_start<<8)+(y_start<<6)+x+x_left ;
+            p_screen = G_ActiveScreen+PIXEL_OFFSET_Y(y_start)+x+x_left ;
 
             /* Get the count of how many pixels to copy. */
             count = 1+p_entry->end - p_entry->start ;
@@ -1967,7 +1972,7 @@ T_void GrDrawCompressedBitmap(
                     *p_screen = pixel ;
 
                 /* Skip down to the next screen line. */
-                p_screen += 320 ;
+                p_screen += SCREEN_WIDTH ;
             }
         }
     }
@@ -2012,12 +2017,12 @@ T_void GrDrawCompressedBitmapAndColor(
     DebugRoutine("GrDrawCompressedBitmapAndColor") ;
 
     DebugCheck(p_bitmap != NULL) ;
-    DebugCheck(x_left < 320) ;
-    DebugCheck(y_top < 200) ;
+    DebugCheck(x_left < SCREEN_WIDTH) ;
+    DebugCheck(y_top < SCREEN_HEIGHT) ;
     /* NOTE:  It may look backward, but since it is rotated, */
     /* sizeX is sizeY and visa-versa. */
-    DebugCheck(x_left+p_bitmap->sizey <= 320) ;
-    DebugCheck(y_top+p_bitmap->sizex <= 200) ;
+    DebugCheck(x_left+p_bitmap->sizey <= SCREEN_WIDTH) ;
+    DebugCheck(y_top+p_bitmap->sizex <= SCREEN_HEIGHT) ;
 
     if (colorTable == COLORIZE_TABLE_NONE)  {
         GrDrawCompressedBitmap(p_bitmap, x_left, y_top) ;
@@ -2047,7 +2052,7 @@ T_void GrDrawCompressedBitmapAndColor(
 
                 /* Where on the screen does it go next? */
                 y_start = y_top + p_entry->start ;
-                p_screen = G_ActiveScreen+(y_start<<8)+(y_start<<6)+x+x_left ;
+                p_screen = G_ActiveScreen+PIXEL_OFFSET_Y(y_start)+x+x_left ;
 
                 /* Get the count of how many pixels to copy. */
                 count = 1+p_entry->end - p_entry->start ;
@@ -2060,7 +2065,7 @@ T_void GrDrawCompressedBitmapAndColor(
                         *p_screen = p_colorize[pixel] ;
 
                     /* Skip down to the next screen line. */
-                    p_screen += 320 ;
+                    p_screen += SCREEN_WIDTH ;
                 }
             }
         }
@@ -2125,8 +2130,8 @@ T_void GrDrawCompressedBitmapAndClip(
     }
 
     /* Clip to the right. */
-    if (x_left+x_size >= 320)
-        x_size -= ((x_left+x_size)-320) ;
+    if (x_left+x_size >= SCREEN_WIDTH)
+        x_size -= ((x_left+x_size)-SCREEN_WIDTH) ;
 
     /* This is the fastest way to blip an unmasked bitmap on the screen */
     /* Without going into assembly language. */
@@ -2137,14 +2142,14 @@ T_void GrDrawCompressedBitmapAndClip(
 
             /* Where on the screen does it go next? */
             y_start = y_top + p_entry->start ;
-            p_screen = G_ActiveScreen+(y_start<<8)+(y_start<<6)+x+x_left ;
+            p_screen = G_ActiveScreen+PIXEL_OFFSET_Y(y_start)+x+x_left ;
 
             /* Get the count of how many pixels to copy. */
             count = 1+p_entry->end - p_entry->start ;
 
             /* Clip to the bottom. */
-            if (count+y_start > 200)
-                count -= ((count+y_start)-200) ;
+            if (count+y_start > SCREEN_HEIGHT)
+                count -= ((count+y_start)-SCREEN_HEIGHT) ;
 
             /* Loop over that line. */
             for (y=y_start, i=0; i<count; i++, p_bitmapData++, y++)  {
@@ -2156,7 +2161,7 @@ T_void GrDrawCompressedBitmapAndClip(
                 }
 
                 /* Skip down to the next screen line. */
-                p_screen += 320 ;
+                p_screen += SCREEN_WIDTH ;
             }
         }
     }
@@ -2232,8 +2237,8 @@ T_void GrDrawCompressedBitmapAndClipAndColor(
         }
 
         /* Clip to the right. */
-        if (x_left+x_size >= 320)
-            x_size -= ((x_left+x_size)-320) ;
+        if (x_left+x_size >= SCREEN_WIDTH)
+            x_size -= ((x_left+x_size)-SCREEN_WIDTH) ;
 
         /* This is the fastest way to blip an unmasked bitmap on the screen */
         /* Without going into assembly language. */
@@ -2244,14 +2249,14 @@ T_void GrDrawCompressedBitmapAndClipAndColor(
 
                 /* Where on the screen does it go next? */
                 y_start = y_top + p_entry->start ;
-                p_screen = G_ActiveScreen+(y_start<<8)+(y_start<<6)+x+x_left ;
+                p_screen = G_ActiveScreen+PIXEL_OFFSET_Y(y_start)+x+x_left ;
 
                 /* Get the count of how many pixels to copy. */
                 count = 1+p_entry->end - p_entry->start ;
 
                 /* Clip to the bottom. */
-                if (count+y_start > 200)
-                    count -= ((count+y_start)-200) ;
+                if (count+y_start > SCREEN_HEIGHT)
+                    count -= ((count+y_start)-SCREEN_HEIGHT) ;
 
                 /* Loop over that line. */
                 for (y=y_start, i=0; i<count; i++, p_bitmapData++, y++)  {
@@ -2263,7 +2268,7 @@ T_void GrDrawCompressedBitmapAndClipAndColor(
                     }
 
                     /* Skip down to the next screen line. */
-                    p_screen += 320 ;
+                    p_screen += SCREEN_WIDTH ;
                 }
             }
         }
@@ -2336,7 +2341,7 @@ static T_void __interrupt __far IVerticalRetrace(T_void)
     T_word16 i ;
     T_byte8 *p_color ;
 
-    ((char *)0xA0000000)[320] ^= 0xFF ;
+    ((char *)0xA0000000)[SCREEN_WIDTH] ^= 0xFF ;
 
 G_verticalCount++ ;
     if (inp(0x3C2) & 0x80)  {
@@ -2432,10 +2437,10 @@ T_screen GrScreenAllocPartial(T_word16 ySize)
     T_screen screen ;
 
     DebugRoutine("GrScreenAllocPartial") ;
-    DebugCheck(ySize < 200) ;
+    DebugCheck(ySize < SCREEN_HEIGHT) ;
 
-    /* Allocate enough memory for a 320x200 area. */
-    screen = MemAlloc((T_word16)(320*ySize)) ;
+    /* Allocate enough memory for a SCREEN_WIDTHxSREEN_HEIGHT area. */
+    screen = MemAlloc((T_word16)(SCREEN_WIDTH*ySize)) ;
     DebugCheck(screen != NULL) ;
 
     DebugEnd() ;
@@ -2515,9 +2520,9 @@ T_void GrShadeRectangle(
     T_byte8 *p_screen ;
 
     DebugRoutine("GrShadeRectangle") ;
-    DebugCheck(x_right < 320) ;
+    DebugCheck(x_right < SCREEN_WIDTH) ;
     DebugCheck(x_left <= x_right) ;
-    DebugCheck(y_bottom < 200) ;
+    DebugCheck(y_bottom < SCREEN_HEIGHT) ;
     DebugCheck(y_top <= y_bottom) ;
 
     GrInvalidateRect(x_left, y_top, x_right, y_bottom) ;
@@ -2526,10 +2531,10 @@ T_void GrShadeRectangle(
     height = y_bottom-y_top+1 ;
 
     /* Find the starting point of where we are going to fill. */
-    p_screen = G_ActiveScreen+(y_top<<8)+(y_top<<6)+x_left ;
+    p_screen = G_ActiveScreen+PIXEL_OFFSET_Y(y_top)+x_left ;
 
     /* Loop through each line and fill those lines. */
-    for (; height > 0; height--, p_screen+=320)
+    for (; height > 0; height--, p_screen+=SCREEN_WIDTH)
         DrawAndShadeRaster(p_screen, p_screen, width, shade) ;
 
     DebugEnd() ;
@@ -2706,8 +2711,8 @@ T_void GrDrawCompressedBitmapAndClipAndColorAndCenterAndResize(
     x_width = (((T_word32)x_size)<<16) / deltaX ;
 
     /* Clip to the right. */
-    if (x_left+x_width >= 320)
-        x_width -= ((x_left+x_width)-320) ;
+    if (x_left+x_width >= SCREEN_WIDTH)
+        x_width -= ((x_left+x_width)-SCREEN_WIDTH) ;
 
     /* This is the fastest way to blip an unmasked bitmap on the screen */
     /* Without going into assembly language. */
@@ -2718,7 +2723,7 @@ T_void GrDrawCompressedBitmapAndClipAndColorAndCenterAndResize(
 
             /* Where on the screen does it go next? */
             y_start = y_top + ((((T_sword32)p_entry->start)<<16) / deltaY) ;
-            p_screen = G_ActiveScreen+(y_start<<8)+(y_start<<6)+x+x_left ;
+            p_screen = G_ActiveScreen+PIXEL_OFFSET_Y(y_start)+x+x_left ;
 
             /* Get the count of how many pixels to copy. */
             count = 1+p_entry->end - p_entry->start ;
@@ -2727,8 +2732,8 @@ T_void GrDrawCompressedBitmapAndClipAndColorAndCenterAndResize(
             count = (((T_sword32)count)<<16)/deltaY ;
 
             /* Clip to the bottom. */
-            if (count+y_start > 200)
-                count -= ((count+y_start)-200) ;
+            if (count+y_start > SCREEN_HEIGHT)
+                count -= ((count+y_start)-SCREEN_HEIGHT) ;
 
             /* Loop over that line. */
             yFract = 0 ;
@@ -2746,7 +2751,7 @@ T_void GrDrawCompressedBitmapAndClipAndColorAndCenterAndResize(
                 }
 
                 /* Skip down to the next screen line. */
-                p_screen += 320 ;
+                p_screen += SCREEN_WIDTH ;
                 yFract += deltaY ;
                 yOffset = (yFract>>16) ;
             }

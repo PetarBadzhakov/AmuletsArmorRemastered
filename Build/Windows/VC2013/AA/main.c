@@ -14,18 +14,32 @@ static int G_done = FALSE;
 static SDL_Surface* screen;
 static SDL_Surface* surface;
 static SDL_Surface* largesurface;
+
 static SDL_Rect srcrect = {
-        0, 0,
-        320, 240
-    };
+    0, 0,
+    SCREEN_WIDTH, SCREEN_HEIGHT
+};
+
+#if (SCREEN_WIDTH > 640)
 static SDL_Rect largesrcrect = {
-        0, 0,
-        640, 480
-    };
+    0, 0,
+    SCREEN_WIDTH, SCREEN_HEIGHT
+};
 static SDL_Rect destrect = {
-        0, 0,
-        640, 480
-    };
+    0, 0,
+    SCREEN_WIDTH, SCREEN_HEIGHT
+};
+#else
+static SDL_Rect largesrcrect = {
+    0, 0,
+    SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2
+};
+static SDL_Rect destrect = {
+    0, 0,
+    SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2
+};
+#endif
+
 extern T_void KeyboardUpdate(E_Boolean updateBuffers);
 
 void SleepMS(T_word32 aMS)
@@ -35,18 +49,15 @@ void SleepMS(T_word32 aMS)
 
 void WindowsUpdateMouse(void)
 {
-    int flags = 0 ;
+    int flags = 0;
     int x, y;
     Uint8 state;
 
     state = SDL_GetMouseState(&x, &y);
     DirectMouseSet(x, y);
-    if (state & SDL_BUTTON_LMASK)
-        flags |= MOUSE_BUTTON_LEFT;
-    if (state & SDL_BUTTON_RMASK)
-        flags |= MOUSE_BUTTON_RIGHT;
-    if (state & SDL_BUTTON_MMASK)
-        flags |= MOUSE_BUTTON_MIDDLE;
+    if (state & SDL_BUTTON_LMASK) flags |= MOUSE_BUTTON_LEFT;
+    if (state & SDL_BUTTON_RMASK) flags |= MOUSE_BUTTON_RIGHT;
+    if (state & SDL_BUTTON_MMASK) flags |= MOUSE_BUTTON_MIDDLE;
     DirectMouseSetButton(flags);
 }
 
@@ -56,249 +67,233 @@ void WindowsUpdateEvents(void)
     SDL_Event event;
     static int altPressed = FALSE;
 
-    while ( SDL_PollEvent(&event) ) {
+    while (SDL_PollEvent(&event)) {
         switch (event.type) {
             case SDL_QUIT:
                 G_done = TRUE;
                 break;
             case SDL_KEYDOWN:
-                if ( event.key.keysym.sym == SDLK_ESCAPE )  {
-                    G_done = TRUE; 
-                } else if ((event.key.keysym.sym == SDLK_LALT) || (event.key.keysym.sym == SDLK_RALT)) {
-                    // Left or right alt pressed?
+                if (event.key.keysym.sym == SDLK_ESCAPE) {
+                    G_done = TRUE;
+                } else if (event.key.keysym.sym == SDLK_LALT
+                        || event.key.keysym.sym == SDLK_RALT) {
                     altPressed = TRUE;
-                } else if ((event.key.keysym.sym == SDLK_RETURN) && (altPressed)) {
-                    // ALT-Enter toggles full screen
-#if 1
-                    flags = screen->flags; /* Save the current flags in case toggling fails */
-                    screen = SDL_SetVideoMode(0, 0, 0, screen->flags ^ SDL_FULLSCREEN); /*Toggles FullScreen Mode */
-                    if(screen == NULL) screen = SDL_SetVideoMode(0, 0, 0, flags); /* If toggle FullScreen failed, then switch back */
-                    if(screen == NULL) exit(1); /* If you can't switch back for some reason, then epic fail */                    
-#endif
+                } else if (event.key.keysym.sym == SDLK_RETURN && altPressed) {
+                    flags = screen->flags;
+                    screen = SDL_SetVideoMode(0,0,0, screen->flags ^ SDL_FULLSCREEN);
+                    if (!screen) screen = SDL_SetVideoMode(0,0,0, flags);
+                    if (!screen) exit(1);
                 }
                 break;
             case SDL_KEYUP:
-                if ((event.key.keysym.sym == SDLK_LALT) || (event.key.keysym.sym == SDLK_RALT)) {
-                    // Left or right alt released?
+                if (event.key.keysym.sym == SDLK_LALT
+                        || event.key.keysym.sym == SDLK_RALT) {
                     altPressed = FALSE;
                 }
                 break;
-#if 0
-            case SDL_MOUSEMOTION:
-            case SDL_MOUSEBUTTONDOWN:
-            case SDL_MOUSEBUTTONUP:
-                DirectMouseSet(event.motion.x, event.motion.y);
-                flags = 0;
-                if (event.motion.state & SDL_BUTTON_LMASK)
-                    flags |= MOUSE_BUTTON_LEFT;
-                if (event.motion.state & SDL_BUTTON_RMASK)
-                    flags |= MOUSE_BUTTON_RIGHT;
-                if (event.motion.state & SDL_BUTTON_MMASK)
-                    flags |= MOUSE_BUTTON_MIDDLE;
-                DirectMouseSetButton(flags);
-                break;
-#endif
-        }    
+        }
         SDL_GetKeyState(NULL);
-        //keys = SDL_GetKeyState(NULL);
-        
-//        if ( keys[SDLK_UP] )    ypos -= 1;
-//        if ( keys[SDLK_DOWN] )  ypos += 1;
-//        if ( keys[SDLK_LEFT] )  xpos -= 1;
-//        if ( keys[SDLK_RIGHT] ) xpos += 1;
-
-//        DrawScene();
     }
 }
 
-#define Copy2x(aDest, aSrc) \
-        *(aDest++) = *aSrc; \
-        *(aDest++) = *(aSrc++);
-
-#define oldCopy2x_4times(aDest, aSrc) \
-    Copy2x(aDest, aSrc) \
-    Copy2x(aDest, aSrc) \
-    Copy2x(aDest, aSrc) \
-    Copy2x(aDest, aSrc)
-
-#define Copy2x_4times(aDest, aSrc) \
-    v = *((T_word32 *)aSrc); \
-    aSrc += 4; \
-    aDest[0] = ((T_byte8 *)&v)[0]; \
-    aDest[1] = ((T_byte8 *)&v)[0]; \
-    aDest[2] = ((T_byte8 *)&v)[1]; \
-    aDest[3] = ((T_byte8 *)&v)[1]; \
-    aDest[4] = ((T_byte8 *)&v)[2]; \
-    aDest[5] = ((T_byte8 *)&v)[2]; \
-    aDest[6] = ((T_byte8 *)&v)[3]; \
-    aDest[7] = ((T_byte8 *)&v)[3]; \
+#define Copy2x_4times(aDest, aSrc)                 \
+    v = *((T_word32 *)aSrc);                       \
+    aSrc += 4;                                     \
+    aDest[0] = ((T_byte8 *)&v)[0]; aDest[1] = ((T_byte8 *)&v)[0]; \
+    aDest[2] = ((T_byte8 *)&v)[1]; aDest[3] = ((T_byte8 *)&v)[1]; \
+    aDest[4] = ((T_byte8 *)&v)[2]; aDest[5] = ((T_byte8 *)&v)[2]; \
+    aDest[6] = ((T_byte8 *)&v)[3]; aDest[7] = ((T_byte8 *)&v)[3]; \
     aDest += 8;
 
 #define Copy2x_20times(aDest, aSrc) \
-    Copy2x_4times(aDest, aSrc) \
-    Copy2x_4times(aDest, aSrc) \
-    Copy2x_4times(aDest, aSrc) \
-    Copy2x_4times(aDest, aSrc) \
+    Copy2x_4times(aDest, aSrc)      \
+    Copy2x_4times(aDest, aSrc)      \
+    Copy2x_4times(aDest, aSrc)      \
+    Copy2x_4times(aDest, aSrc)      \
     Copy2x_4times(aDest, aSrc)
 
 #define Copy2x_100times(aDest, aSrc) \
-    Copy2x_20times(aDest, aSrc) \
-    Copy2x_20times(aDest, aSrc) \
-    Copy2x_20times(aDest, aSrc) \
-    Copy2x_20times(aDest, aSrc) \
+    Copy2x_20times(aDest, aSrc)      \
+    Copy2x_20times(aDest, aSrc)      \
+    Copy2x_20times(aDest, aSrc)      \
+    Copy2x_20times(aDest, aSrc)      \
     Copy2x_20times(aDest, aSrc)
 
 #define Copy2x_320times(aDest, aSrc) \
-    Copy2x_100times(aDest, aSrc) \
-    Copy2x_100times(aDest, aSrc) \
-    Copy2x_100times(aDest, aSrc) \
+    Copy2x_100times(aDest, aSrc)     \
+    Copy2x_100times(aDest, aSrc)     \
+    Copy2x_100times(aDest, aSrc)     \
     Copy2x_20times(aDest, aSrc)
 
 void WindowsUpdate(char *p_screen, unsigned char *palette)
 {
     SDL_Color colors[256];
-    int i;
-    unsigned char *src = (char *)surface->pixels;
-    unsigned char *dst = (char *)largesurface->pixels;
+    int i, y;
+    unsigned char *src = (unsigned char *)surface->pixels;
+    unsigned char *dst = (unsigned char *)largesurface->pixels;
     unsigned char *line;
-    static int lastFPS = 0;
-    static int fps = 0;
-    int y;
-    T_word32 tick = clock();
-    static T_word32 lastTick = 0xFFFFEEEE;
+    static int    lastFPS      = 0;
+    static int    fps          = 0;
+    T_word32      tick         = clock();
+    static T_word32 lastTick    = 0xFFFFEEEE;
     static double movingAverage = 0;
+#if (SCREEN_WIDTH <= 640)
     T_word32 v;
+#endif
     T_word32 frac;
 
 #if CAP_SPEED_TO_FPS
-        if ((tick-lastTick)<(1000/CAP_SPEED_TO_FPS)) {
-Sleep((1000/CAP_SPEED_TO_FPS) - (tick-lastTick));
-        // 10 ms between frames (top out at 100 ms)
+    if ((tick - lastTick) < (1000 / CAP_SPEED_TO_FPS)) {
+        Sleep((1000 / CAP_SPEED_TO_FPS) - (tick - lastTick));
     } else
 #endif
     {
         lastTick = tick;
-//printf("Update: %d (%d)\n", clock(), TickerGet());
 
-    // Setup the color palette for this update
-    for (i=0; i<256; i++) {
-        colors[i].r = ((((unsigned int)*(palette++))&0x3F)<<2);
-        colors[i].g = ((((unsigned int)*(palette++))&0x3F)<<2);
-        colors[i].b = ((((unsigned int)*(palette++))&0x3F)<<2);
-    }
-    //SDL_SetColors(surface, colors, 0, 256);
-    SDL_SetColors(largesurface, colors, 0, 256);
-
-    // Blit the current surface from 320x200 to 640x480
-    line = src;
-    for (y=0, frac=0; y<200; y++, line+=320) {
-//        for (x=0; x<320; x++) {
-//            *(dst++) = *src;
-//            *(dst++) = *(src++);
-//        }
-        while (frac < 400) {
-            src = line;
-            Copy2x_320times(dst, src);
-            frac += 200;
+        for (i = 0; i < 256; i++) {
+            colors[i].r = ((palette[0] & 0x3F) << 2);
+            colors[i].g = ((palette[1] & 0x3F) << 2);
+            colors[i].b = ((palette[2] & 0x3F) << 2);
+            colors[i].unused = 0;
+            palette += 3;
         }
-        frac -= 400;
-//        for (x=0; x<320; x++) {
-//            *(dst++) = *src;
-//            *(dst++) = *(src++);
-//        }
-//        Copy2x_320times(dst, src);
-    }
+        SDL_SetColors(surface,      colors, 0, 256);
+        SDL_SetColors(largesurface, colors, 0, 256);
 
-    if (SDL_BlitSurface(largesurface, &largesrcrect, screen, &destrect)) {
-        printf("Failed blit: %s\n", SDL_GetError());
-    }
-    SDL_UpdateRect(screen, 0, 0, 0, 0);
-    fps++;
+#if (SCREEN_WIDTH > 640)
+        line = src;
+        for (y = 0, frac = 0; y < SCREEN_HEIGHT; y++, line += SCREEN_WIDTH) {
+            while (frac < SCREEN_HEIGHT) {
+                memcpy(dst, line, SCREEN_WIDTH);
+                dst += SCREEN_WIDTH;
+                frac += SCREEN_HEIGHT;
+            }
+            frac -= SCREEN_HEIGHT;
+        }
+#else
+        line = src;
+        for (y = 0, frac = 0; y < SCREEN_HEIGHT; y++, line += SCREEN_WIDTH) {
+            while (frac < (SCREEN_HEIGHT * 2)) {
+                Copy2x_320times(dst, line);
+                frac += SCREEN_HEIGHT;
+            }
+            frac -= SCREEN_HEIGHT * 2;
+        }
+#endif
 
-    if ((tick-lastFPS) >= 1000) {
-        if (movingAverage < 1.0)
-            movingAverage = fps;
-        movingAverage = ((double)fps)*0.05+movingAverage*0.95;
-        lastFPS += 1000;
-        //printf("%02d:%02d:%02d.%03d FPS: %d, %f\n", tick/3600000, (tick/60000) % 60, (tick/1000) % 60, tick%1000, fps, movingAverage);
-        fps = 0;
-    }
-    WindowsUpdateEvents();
-    WindowsUpdateMouse();
-    KeyboardUpdate(TRUE) ;
-#if CAP_SPEED_TO_100_FPS
-    Sleep(1);
+        if (SDL_BlitSurface(largesurface, &largesrcrect, screen, &destrect)) {
+            printf("Failed blit: %s\n", SDL_GetError());
+        }
+        SDL_UpdateRect(screen, 0, 0, 0, 0);
+        fps++;
+
+        if ((tick - lastFPS) >= 1000) {
+            if (movingAverage < 1.0) movingAverage = fps;
+            movingAverage = fps * 0.05 + movingAverage * 0.95;
+            lastFPS += 1000;
+            fps = 0;
+        }
+
+        WindowsUpdateEvents();
+        WindowsUpdateMouse();
+        KeyboardUpdate(TRUE);
+#if CAP_SPEED_TO_FPS
+        Sleep(1);
 #endif
     }
 }
-
 
 extern T_void game_main(T_word16 argc, char *argv[]);
 
 int SDL_main(int argc, char *argv[])
 {
-	char *pixels;
+    char *pixels;
     int x, y;
-    SDL_Color black = { 0, 0, 0, 0 };
-    SDL_Color white = { 255, 255, 255, 0 };
+    SDL_Color black = {0,   0,   0,   0};
+    SDL_Color white = {255, 255, 255, 0};
 
-    //SDL_Surface* icon;
-
-    if( SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO) < 0)
-    {
-          printf ("Could not initialize SDL: %s\n",SDL_GetError());
-          return 1;
+    if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO) < 0) {
+        printf("Could not initialize SDL: %s\n", SDL_GetError());
+        return 1;
     }
-
     atexit(SDL_Quit);
 
+#if (SCREEN_WIDTH > 640)
+    screen = SDL_SetVideoMode(
+        SCREEN_WIDTH, SCREEN_HEIGHT, 32,
+        SDL_HWSURFACE|SDL_DOUBLEBUF
 #ifdef NDEBUG
-    screen = SDL_SetVideoMode(640, 400, 32, SDL_HWSURFACE|SDL_DOUBLEBUF|SDL_FULLSCREEN);
-#else
-    screen = SDL_SetVideoMode(640, 400, 32, SDL_HWSURFACE|SDL_DOUBLEBUF);
+        | SDL_FULLSCREEN
 #endif
+    );
+#else
+    screen = SDL_SetVideoMode(
+        SCREEN_WIDTH*2, SCREEN_HEIGHT*2, 32,
+        SDL_HWSURFACE|SDL_DOUBLEBUF
+#ifdef NDEBUG
+        | SDL_FULLSCREEN
+#endif
+    );
+#endif
+
     SDL_WM_SetCaption("Amulets & Armor", "Amulets & Armor");
-    SDL_ShowCursor( SDL_DISABLE ); 
+    SDL_ShowCursor(SDL_DISABLE);
 
-    if(screen == NULL)
-    {
-          printf("Could not set video mode: %s\n",SDL_GetError());
-          return 1;
+    if (!screen) {
+        printf("Could not set video mode: %s\n", SDL_GetError());
+        return 1;
     }
 
-    surface = SDL_CreateRGBSurface(SDL_SWSURFACE, 320, 240, 8, 0, 0, 0, 0);
-    if (surface == NULL) {
+    surface = SDL_CreateRGBSurface(
+        SDL_SWSURFACE, SCREEN_WIDTH, SCREEN_HEIGHT, 8,
+        0, 0, 0, 0
+    );
+    if (!surface) {
         printf("Could not create overlay: %s\n", SDL_GetError());
         return 1;
     }
-    largesurface = SDL_CreateRGBSurface(SDL_SWSURFACE, 640, 400, 8, 0, 0, 0, 0);
-    if (largesurface == NULL) {
+
+#if (SCREEN_WIDTH > 640)
+    largesurface = SDL_CreateRGBSurface(
+        SDL_SWSURFACE,
+        SCREEN_WIDTH, SCREEN_HEIGHT, 8,
+        0, 0, 0, 0
+    );
+#else
+    largesurface = SDL_CreateRGBSurface(
+        SDL_SWSURFACE,
+        SCREEN_WIDTH*2, SCREEN_HEIGHT*2, 8,
+        0, 0, 0, 0
+    );
+#endif
+    if (!largesurface) {
         printf("Could not create overlay: %s\n", SDL_GetError());
         return 1;
     }
+
     SDL_SetColors(surface, &black, 0, 1);
     SDL_SetColors(surface, &white, 255, 1);
-    pixels = (char *)surface->pixels;
-    GRAPHICS_ACTUAL_SCREEN = (void *)pixels;
-    for (y=0; y<240; y++) {
-        for (x=0; x<320; x++, pixels++) {
-            if ((x == 0) || (x == 319) || (y == 0) || (y == 239))
+
+    pixels = (char*)surface->pixels;
+    GRAPHICS_ACTUAL_SCREEN = pixels;
+    for (y = 0; y < SCREEN_HEIGHT; y++) {
+        for (x = 0; x < SCREEN_WIDTH; x++, pixels++) {
+            if (x == 0 || x == SCREEN_WIDTH-1 ||
+                y == 0 || y == SCREEN_HEIGHT-1)
                 *pixels = 255;
             else
                 *pixels = 0;
         }
     }
 
-    {
 #ifndef NDEBUG
-    int tmpFlag = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
+    {
+        int tmpFlag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
         tmpFlag |= _CRTDBG_LEAK_CHECK_DF;
-    _CrtSetDbgFlag( tmpFlag );
+        _CrtSetDbgFlag(tmpFlag);
+    }
 #endif
 
-        game_main(argc, argv);
-    }
-
+    game_main(argc, argv);
     return 0;
 }
-
