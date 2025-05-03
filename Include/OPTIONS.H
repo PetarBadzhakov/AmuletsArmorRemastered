@@ -76,9 +76,9 @@
 #ifdef COMPILE_OPTION_SHAREWARE_DEMO
     #define VERSION_TEXT "Shareware Demo V1.3.2.1"
 #elif defined(COMPILE_OPTION_CLASSIC_VERSION)
-    #define VERSION_TEXT "Peewee's Mod V1.3.2.1"
+    #define VERSION_TEXT "AARemastered V0.9.0.0"
 #elif defined(COMPILE_OPTION_CLASSIC_DEV_VERSION)
-    #define VERSION_TEXT "Peewee's Mod Dev V1.3.2.1"
+    #define VERSION_TEXT "AARemastered Dev V0.9.0.0"
 #else
     #define VERSION_TEXT "Registered V1.0"
 #endif
