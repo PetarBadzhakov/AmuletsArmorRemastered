@@ -66,16 +66,16 @@
     <IncludePath>$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;..\..\..\..\Lib\SDL_net-1.2.8\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LibraryPath>..\..\..\..\Lib\SDL-1.2.15\lib\x86;..\..\..\..\Lib\SDL_net-1.2.8\lib\x86;$(LibraryPath)</LibraryPath>
+    <LibraryPath>..\..\..\..\Lib\SDL2-2.32.4\lib\x86;..\..\..\..\Lib\SDL2_net-2.2.0\lib\x86;$(LibraryPath)</LibraryPath>
     <LinkIncremental>true</LinkIncremental>
     <!-- Note: Release usually has false/Default here, but keeping your setting -->
-    <IncludePath>..\..\..\..\Lib\SDL_net-1.2.8\include;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\..\..\Lib\SDL2_net-2.2.0\include;$(IncludePath)</IncludePath>
     <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
   <!-- =================== DEBUG CONFIGURATION (Modified for Max Debugging) =================== -->
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <!-- /Od: Disable optimizations -->
       <AdditionalIncludeDirectories>..\..\..\..\Include;..\..\..\..\Lib\SDL-1.2.15\include;..\..\..\..\Lib\SDL_net-1.2.8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -178,11 +178,11 @@
   <!-- =================== RELEASE CONFIGURATION (Unchanged) =================== -->
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <WarningLevel>Level1</WarningLevel>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\..\..\..\Include;..\..\..\..\Lib\SDL-1.2.15\include;..\..\..\..\Lib\SDL_net-1.2.8;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\..\Include;..\..\..\..\Lib\SDL2-2.32.4\include;..\..\..\..\Lib\SDL2_net-2.2.0;..\..\..\..\Lib\SDL2_net-2.2.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>None</DebugInformationFormat>
       <CompileAsManaged>false</CompileAsManaged>
       <TreatWarningAsError>true</TreatWarningAsError>
@@ -218,7 +218,7 @@
       <ShowProgress>NotSet</ShowProgress>
       <GenerateMapFile>false</GenerateMapFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalDependencies>kernel32.lib;SDL.lib;SDLmain.lib;sdl_net.lib</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;SDL2.lib;SDL2main.lib;SDL2_net.lib</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
       <AssemblyDebug>true</AssemblyDebug>
     </Link>
