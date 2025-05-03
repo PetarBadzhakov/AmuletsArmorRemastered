@@ -12,3 +12,8 @@ Migrate to SDL3.
 Uncap the FPS.
 
 Resolution slider with integer upscaling.
+
+# TODO:
+Death due to poison caused by player should give XP
+Shooting an arrow at a wall damages the player
+

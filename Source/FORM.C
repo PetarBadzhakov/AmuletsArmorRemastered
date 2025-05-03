@@ -471,7 +471,7 @@ T_void FormLoadFromFile(T_byte8 *filename)
         /* get a line from the main file */
         fgets(tempstr, 128, fp);
         /* strip last (newline) character */
-        if (tempstr[strlen(tempstr) - 1] == '\n')
+        if (strlen(tempstr) > 0 && tempstr[strlen(tempstr) - 1] == '\n')
             tempstr[strlen(tempstr) - 1] = '\0';
 
         /* append text to current object if flag is set */
@@ -486,7 +486,7 @@ T_void FormLoadFromFile(T_byte8 *filename)
                 sprintf(tempstr, "#");
             } else if (tempstr[0] != '$' && tempstr[0] != '#') {
                 /* strip last character if newline */
-                if (tempstr[strlen(tempstr) - 1] == '\n')
+                if (strlen(tempstr) > 0 && tempstr[strlen(tempstr) - 1] == '\n')
                     tempstr[strlen(tempstr) - 1] = '\0';
                 TxtboxAppendString(p_obj->objID, tempstr);
                 TxtboxAppendKey(p_obj->objID, 13);
@@ -516,53 +516,61 @@ T_void FormLoadFromFile(T_byte8 *filename)
 
         /* ignore comments and blank lines */
         if (tempstr[0] != '#' && tempstr[0] != ' ') {
-            sscanf(tempstr, "%d", &objtype);
+            sscanf(tempstr, "%hd", &objtype); // Corrected %d to %hd
             if (objtype == 1) /* add a graphic */
             {
-                sscanf(tempstr, "%d,%d,%d,%d,%s", &objtype, &objid, &x1, &y1,
+                // Corrected %d to %hd, %s to %31s
+                sscanf(tempstr, "%hd,%hd,%hd,%hd,%31s", &objtype, &objid, &x1, &y1,
                         picname);
                 FormAddGraphic(x1, y1, picname, objid);
             } else if (objtype == 2) /* add a text */
             {
-                sscanf(tempstr, "%d,%d,%d,%d,%d,%d", &objtype, &objid, &x1, &y1,
+                // Corrected %d to %hd
+                sscanf(tempstr, "%hd,%hd,%hd,%hd,%hd,%hd", &objtype, &objid, &x1, &y1,
                         &fcolor, &bcolor);
                 /* get font name */
                 fgets(tempstr, 128, fp);
-                sscanf(tempstr, "%s", fontname);
+                 // Corrected %s to %31s
+                sscanf(tempstr, "%31s", fontname);
                 /* get text */
                 fgets(tempstr, 128, fp);
                 /* strip last (newline) character */
-                if (tempstr[strlen(tempstr) - 1] == '\n')
+                if (strlen(tempstr) > 0 && tempstr[strlen(tempstr) - 1] == '\n')
                     tempstr[strlen(tempstr) - 1] = '\0';
                 /* add a text object */
                 FormAddText(x1, y1, tempstr, fontname, (T_byte8)fcolor, (T_byte8)bcolor, objid);
             } else if (objtype == 3) /* add a button */
             {
-                sscanf(tempstr, "%d,%d,%d,%d,%d,%d,%s", &objtype, &objid, &x1,
+                // Corrected %d to %hd, %s to %31s
+                sscanf(tempstr, "%hd,%hd,%hd,%hd,%hd,%hd,%31s", &objtype, &objid, &x1,
                         &y1, &toggletype, &hotkey, picname);
                 FormAddButton(x1, y1, picname, (E_Boolean)toggletype, hotkey,
                         objid);
             } else if (objtype == 4) /* add a text button */
             {
-                sscanf(tempstr, "%d,%d,%d,%d,%d,%d,%d", &objtype, &objid, &x1, &y1,
+                // Corrected %d to %hd
+                sscanf(tempstr, "%hd,%hd,%hd,%hd,%hd,%hd,%hd", &objtype, &objid, &x1, &y1,
                         &fcolor, &toggletype, &hotkey);
                 /* get picture name */
                 fgets(tempstr, 128, fp);
-                sscanf(tempstr, "%s", picname);
+                 // Corrected %s to %31s
+                sscanf(tempstr, "%31s", picname);
                 /* get font name */
                 fgets(tempstr, 128, fp);
-                sscanf(tempstr, "%s", fontname);
+                 // Corrected %s to %31s
+                sscanf(tempstr, "%31s", fontname);
                 /* get buttontext */
                 fgets(tempstr, 128, fp);
                 /* strip last (newline) character */
-                if (tempstr[strlen(tempstr) - 1] == '\n')
+                if (strlen(tempstr) > 0 && tempstr[strlen(tempstr) - 1] == '\n')
                     tempstr[strlen(tempstr) - 1] = '\0';
                 /* make a text button */
                 FormAddTextButton(x1, y1, tempstr, picname, fontname, (T_byte8)fcolor, 0,
                         (E_Boolean)toggletype, hotkey, objid);
             } else if (objtype == 5) /* add a text box */
             {
-                sscanf(tempstr, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s",
+                // Corrected %d to %hd, %d for maxlength to %ld, %s to %31s
+                sscanf(tempstr, "%hd,%hd,%hd,%hd,%hd,%hd,%ld,%hd,%hd,%hd,%hd,%hd,%hd,%hd,%31s",
                         &objtype, &objid, &x1, &y1, &x2, &y2, &maxlength,
                         &numericonly, &justify, &fieldtype, &hotkey, &sbupID,
                         &sbdnID, &sbgrID, fontname);
@@ -572,7 +580,7 @@ T_void FormLoadFromFile(T_byte8 *filename)
                 /* create a text box */
                 /* set maximum length to highest possible value if 0 */
                 if (maxlength == 0)
-                    maxlength--;
+                    maxlength--; // Note: This makes maxlength = 0xFFFFFFFF (UINT_MAX)
 
                 objID = FormAddTextBox(
 							x1,
@@ -611,7 +619,8 @@ T_void FormLoadFromFile(T_byte8 *filename)
 
             } else if (objtype == 6) /* add a slider */
             {
-                sscanf(tempstr, "%d,%d,%d,%d,%d", &objtype, &objid, &x1, &y1,
+                // Corrected %d to %hd
+                sscanf(tempstr, "%hd,%hd,%hd,%hd,%hd", &objtype, &objid, &x1, &y1,
                         &x2);
                 objID = FormAddSlider(x1, y1, x2, objid);
                 DebugCheck(objID != NULL);

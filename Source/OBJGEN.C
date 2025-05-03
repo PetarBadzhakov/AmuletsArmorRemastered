@@ -123,7 +123,8 @@ T_void ObjectGeneratorLoad(T_word32 mapNumber)
         fgets(line, 80, fp) ;
         while (!feof(fp))  {
             if (line[0] == 'G')  {
-                sscanf(line+1, "%u%d%d%u%u%u%u%u%u%d",
+                // Corrected format specifiers: %u -> %hu, %d -> %hd
+                sscanf(line+1, "%hu%hd%hd%hu%hu%hu%hu%hu%hu%hd",
                     &objectType,
                     &x,
                     &y,

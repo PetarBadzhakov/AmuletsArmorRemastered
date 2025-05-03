@@ -2780,6 +2780,7 @@ INDICATOR_LIGHT(837, INDICATOR_GREEN) ;
         sizeY-- ;
     } else  {
         sizeX = sizeY = 1 ;
+        shiftOrig = 1;
     }
     sizeXX = sizeX ;
     sizeYY = sizeY ;
