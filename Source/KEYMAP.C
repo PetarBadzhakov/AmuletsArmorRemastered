@@ -20,51 +20,53 @@ T_byte8 G_keyMap[256] ;               /* Array of keyscan codes */
 static E_Boolean G_init = FALSE ;     /* Flag to determine if init'd */
 
 /*-------------------------------------------------------------------------*
- * Routine:  KeyMapInitialize
- *-------------------------------------------------------------------------*/
+* Routine:  KeyMapInitialize
+*-------------------------------------------------------------------------*/
 /**
- *  KeyMapInitialize is called after a iniFile is opened.  This routine
- *  pulls the key configuration out of the keyboard group in the ini file.
- *
- *  @param iniFile -- .ini file with keyboard group
- *
- *<!-----------------------------------------------------------------------*/
+*  KeyMapInitialize is called after a iniFile is opened.  This routine
+*  pulls the key configuration out of the keyboard group in the ini file.
+*
+*  @param iniFile -- .ini file with keyboard group
+*
+*<!-----------------------------------------------------------------------*/
 T_void KeyMapInitialize(T_iniFile iniFile)
 {
-    T_word16 i, j ;
-    T_byte8 *buffer ;
-    T_word16 c ;
-    T_word16 len;
+	T_word16 i = 0, j = 0;
+	T_byte8 *buffer;
+	T_word16 c;
+	T_word16 len;
 
-    DebugRoutine("KeyMapInitialize") ;
-    DebugCheck(G_init == FALSE) ;
-    G_init = TRUE ;
+	DebugRoutine("KeyMapInitialize");
+	DebugCheck(G_init == FALSE);
+	G_init = TRUE;
 
-    // Setup default keys in case .ini file is missing or incorrect
-    memset(G_keyMap, 0, sizeof(G_keyMap));
-//    G_keyMap[KEYMAP_ACTIVATE_OR_TAKE] = KEY_SCAN_CODE_E;
+	memset(G_keyMap, 0, sizeof(G_keyMap));
+	//    G_keyMap[KEYMAP_ACTIVATE_OR_TAKE] = KEY_SCAN_CODE_E;
 
-    buffer = INIFileGet(iniFile, "keyboard", "keys1") ;
-    if (buffer)  {
-        for (j=i=0; i<34; i++)  {
-            sscanf(buffer+j, "%02X", &c) ;
-            G_keyMap[i] = (T_byte8)c ;
-            j+=2 ;
-        }
-    }
-    buffer = INIFileGet(iniFile, "keyboard", "keys2") ;
-    if (buffer)  {
-        len = strlen(buffer);
-        for (j=0; i<KEYMAP_NUM_KEYS_MAPPED; i++)  {
-            if (j < len) {
-                sscanf(buffer+j, "%02X", &c) ;
-                G_keyMap[i] = (T_byte8)c ;
-                j+=2 ;
-            }
-        }
-    }
+	buffer = INIFileGet(iniFile, "keyboard", "keys1");
+	if (buffer)  {
+		// Corrected loop initialization
+		for (i = 0, j = 0; i < 34; i++)  {
+			sscanf(buffer + j, "%2hx", &c);
+			G_keyMap[i] = (T_byte8)c;
+			j += 2;
+		}
+	}
 
-    DebugEnd() ;
+	buffer = INIFileGet(iniFile, "keyboard", "keys2");
+	if (buffer)  {
+		len = strlen(buffer);
+		// 'i' continues from where it left off
+		for (j = 0; i<KEYMAP_NUM_KEYS_MAPPED; i++)  {
+			if (j < len) {
+				sscanf(buffer + j, "%2hx", &c);
+				G_keyMap[i] = (T_byte8)c;
+				j += 2;
+			}
+		}
+	}
+
+	DebugEnd();
 }
 
 /*-------------------------------------------------------------------------*

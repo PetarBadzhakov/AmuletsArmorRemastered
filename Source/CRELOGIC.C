@@ -726,6 +726,8 @@ T_void CreatureAttachToObject(T_3dObject *p_obj)
 				p_creature->meleeDamage = p_logic->meleeDamage;
 				p_creature->damageResist = p_logic->damageResist;
 				p_creature->CharmValue = 0;//Clear any spell effects
+				p_creature->LastTouchedID = 0;
+				p_creature->TimeLastTouched = 0;
 
                 Collide3dUpdateLineOfSightLast(
                     &p_creature->sight,
@@ -1078,7 +1080,7 @@ T_sword32 lx, ly, lz ;
                                 p_creature->poisonLevel*2,
                                 EFFECT_DAMAGE_NORMAL,
                                 0,
-								EFFECT_ATTACKTYPE_MISC,
+								EFFECT_ATTACKTYPE_HEALTHDRAIN,
 								EQUIP_WEAPON_TYPE_UNKNOWN);
 
                             if (p_creature->poisonLevel > 5)
@@ -1103,7 +1105,7 @@ T_sword32 lx, ly, lz ;
 								p_creature->healthDecayRate * HEALTH_DECAY_RATE_TICKS,
 								EFFECT_DAMAGE_NORMAL,
 								0,
-								EFFECT_ATTACKTYPE_MISC,
+								EFFECT_ATTACKTYPE_HEALTHDRAIN,
 								EQUIP_WEAPON_TYPE_UNKNOWN);
 
 							p_creature->healthDecayRateLast = 0;
@@ -3913,11 +3915,12 @@ T_void CreatureTakeDamage(
 {
     T_creatureState *p_creature ;
     T_creatureLogic *p_logic ;
-    T_word32 damageAmt ;
+	T_word32 damageAmt, awardXP;
 	T_word16 acidDmgMin;
     T_word16 numEffects ;
     T_word16 numResists ;
-	//T_word16 calcResult;
+	E_Boolean isThisPlayer;
+	T_byte8 weaponTypeLocal;
 
     DebugRoutine("CreatureTakeDamage") ;
 
@@ -3938,6 +3941,9 @@ printf("Creature %d (%d) takes damage %d (was health %d) by %s\n",
             p_logic = p_creature->p_logic ;
             DebugCheck(p_logic != NULL) ;
 
+			//Get weapon type information without silver flag
+			weaponTypeLocal = weaponType & ~EQUIP_WEAPON_TYPE_FLAG_SILVER;
+
             /* Make sure this is not damage of our own (if the */
             /* flag that says so is TRUE */
             if ((ownerID != ObjectGetServerId(p_creature->p_obj)) ||
@@ -3950,15 +3956,20 @@ printf("Creature %d (%d) takes damage %d (was health %d) by %s\n",
 				//Mark this creature as charmed by this spell
 				p_creature->CharmValue = p_creature->CharmValue | type & (~EFFECT_DAMAGE_SPECIAL);
 
+				//Check if this is from the current client
+				isThisPlayer = ownerID == ObjectGetServerId(PlayerGetObject());
+
                 /* Is this a special type of damage? */
                 if (type & EFFECT_DAMAGE_SPECIAL)  {
                     switch(type & (~EFFECT_DAMAGE_SPECIAL))  {
                         case EFFECT_DAMAGE_SPECIAL_LOCK:
                         case EFFECT_DAMAGE_SPECIAL_UNLOCK:
                             break ;
+						//Mark this attacker as the last touch
                         case EFFECT_DAMAGE_SPECIAL_PUSH:
-                            break ;
                         case EFFECT_DAMAGE_SPECIAL_PULL:
+							p_creature->LastTouchedID = ownerID;
+							p_creature->TimeLastTouched = SyncTimeGet() + 140; //two seconds where indirect damage grants xp
                             break ;
                         case EFFECT_DAMAGE_SPECIAL_BERSERK:
                             /* Make the creature lose its target. */
@@ -3977,7 +3988,7 @@ printf("Creature %d (%d) takes damage %d (was health %d) by %s\n",
                         case EFFECT_DAMAGE_SPECIAL_DISPEL_MAGIC:
 							//remove immunities
 							if (p_creature->damageResist > 0)
-								if (AttackerIsPlayer(p_creature, ownerID))
+								if (AttackerIsPlayer(p_creature, ownerID) && isThisPlayer)
 									MessageAdd("Your enemy appears less threatening.");
 							p_creature->damageResist = 0;
                             break ;
@@ -4031,7 +4042,8 @@ printf("Creature %d (%d) takes damage %d (was health %d) by %s\n",
                     }
 				
 					//If not a regular hit, just give flat XP bonus
-					if (ownerID == ObjectGetServerId(PlayerGetObject()))  {
+					if (isThisPlayer)  
+					{
 						StatsChangePlayerExperience(XP_TOHIT_BONUS);
 					}
 
@@ -4066,7 +4078,7 @@ printf("Creature %d (%d) takes damage %d (was health %d) by %s\n",
 						acidDmgMin = 200;
 						if (p_creature->meleeDamage > acidDmgMin)
 						{	
-							if (AttackerIsPlayer(p_creature, ownerID))
+							if (AttackerIsPlayer(p_creature, ownerID) && isThisPlayer)
 								MessageAdd("Your foe's weapon crumbles.");
 
 							//reduce by 20% until minimum is reached
@@ -4074,6 +4086,9 @@ printf("Creature %d (%d) takes damage %d (was health %d) by %s\n",
 
 							if (p_creature->meleeDamage < acidDmgMin)
 								p_creature->meleeDamage = acidDmgMin;
+
+							//minor bonus
+							damageAmt = (T_word32)((double)damageAmt * 1.1);
 						}
                     }
 
@@ -4084,6 +4099,9 @@ printf("Creature %d (%d) takes damage %d (was health %d) by %s\n",
                         } else {
                             /* Poison is transferred into the poison level. */
                             p_creature->poisonLevel += damage/10 ;
+
+							//minor bonus
+							damageAmt = (T_word32)((double)damageAmt * 1.1);
                         }
                     }
 
@@ -4092,23 +4110,27 @@ printf("Creature %d (%d) takes damage %d (was health %d) by %s\n",
                         if (p_creature->damageResist & EFFECT_DAMAGE_ELECTRICITY)  {
                             numResists++ ;
                         } else {
+
+							//Elctricity adds small bonus
+							damageAmt = (T_word32)((double)damageAmt * 1.2);
+
                             /* Electricity does additional damage based */
                             /* on the armor of the enemy. */
                             switch (p_logic->armorType)  {
                                 case EQUIP_ARMOR_TYPE_BREASTPLATE_CLOTH:
-                                    /* Cloth is normal. */
+                                    /* Cloth is minor bonus. */
                                     break ;
                                 case EQUIP_ARMOR_TYPE_BREASTPLATE_CHAIN:
-                                    /* Chain adds 25% damage. */
-                                    damageAmt += (damage>>2) ;
+                                    /* Chain adds 10% damage. */
+									damageAmt += (T_word32)((double)damageAmt * 1.1);
                                     break ;
                                 case EQUIP_ARMOR_TYPE_BREASTPLATE_PLATE:
-                                    /* Plate adds 50% damage. */
-                                    damageAmt += (damage>>1) ;
+                                    /* Plate adds 15% damage. */
+									damageAmt += (T_word32)((double)damageAmt * 1.1);
                                     break ;
                                 default:
-                                    /* Nothing special here. */
-                                    break ;
+                                    /* No armor is minor bonus. */
+									break;
                             }
                         }
                     }
@@ -4120,18 +4142,33 @@ printf("Creature %d (%d) takes damage %d (was health %d) by %s\n",
                         } else 
 						{
 							//if this monster has an attack delay
-							if (p_logic->missileAttackDelay > 0)
+							if (p_logic->missileAttackDelay > 0 && p_creature->p_logic->missileType != 0)
 							{
-								//only display message for player if this is the first hit
-								if (AttackerIsPlayer(p_creature, ownerID) && p_creature->missileDelayMod == 1)
-									MessageAdd("The enemy's voice stutters.");
+								if (isThisPlayer)
+								{
+
+									//only display message for player if this is the first hit
+									//	(all monsters start with missiledelaymod of 1)
+									if (AttackerIsPlayer(p_creature, ownerID) && p_creature->missileDelayMod == 1)
+									{
+										MessageAdd("The enemy's voice stutters.");
+									}
+
+									//Restore some mana (30%) if monster has magic
+									//	We're assuming anyone with a missile type has magic. But this is obviously
+									//	not true for knights of andrew and maybe not true for creatures.
+									StatsChangePlayerMana((T_word32)(damageAmt * 0.3));
+								}
 
 								//increase attack delay by 50%
-								p_creature->missileDelayMod += (float)0.5;
+								p_creature->missileDelayMod += (float)0.25;
 
 								//reset current attack delay
 								p_creature->missileDelayCount = (T_word16)((float)p_logic->missileAttackDelay * p_creature->missileDelayMod);
 							}
+
+							//minor bonus
+							damageAmt = (T_word32)((double)damageAmt * 1.1);
                         }
                     }
 
@@ -4166,7 +4203,17 @@ printf("Creature %d (%d) takes damage %d (was health %d) by %s\n",
                         }
                     }
 
-                    if (numEffects>0)  {
+					//No monster can be immune to silver or mithril
+					if (ownerID != 0 && ownerID != p_creature->targetID &&
+						p_creature->p_obj->ownerID != ownerID &&
+						AttackerIsPlayer(p_creature, ownerID) &&
+						AtackIsMelee(damageObjectType) &&
+						weaponType & EQUIP_WEAPON_TYPE_FLAG_SILVER)
+					{
+						numEffects++;
+					}
+
+                    if (numEffects>0) {
                         damageAmt -= (damageAmt * numResists) / numEffects ;
                     } else {
                         damageAmt = 0 ;
@@ -4183,10 +4230,11 @@ printf("Creature %d (%d) takes damage %d (was health %d) by %s\n",
 						AtackIsMelee(damageObjectType) &&
 						ClientIsDead() == FALSE) // cant sneakattack with dying blow
 					{
-						if (IsDaggerWeapon(weaponType))
+						if (IsDaggerWeapon(weaponTypeLocal))
 						{
 							damageAmt *= 7;
-							MessageAdd("Sneak attack!");
+							if (isThisPlayer)
+								MessageAdd("Sneak attack!");
 						}
 						else
 						{
@@ -4202,14 +4250,20 @@ printf("Creature %d (%d) takes damage %d (was health %d) by %s\n",
 						if (IsUndead(p_creature))
 						{
 							//bonus damage for blunt weapons
-							if (IsBluntWeapon(weaponType))
+							if (IsBluntWeapon(weaponTypeLocal))
 							{
 								damageAmt = (T_word32)((double)damageAmt * 1.5);
 							}
 							//less damage for blades
-							else if (IsBladeWeapon(weaponType) || IsDaggerWeapon(weaponType))
+							else if (IsBladeWeapon(weaponTypeLocal) || IsDaggerWeapon(weaponTypeLocal))
 							{
-								damageAmt = (T_word32)((double)damageAmt * 0.33);
+								damageAmt = (T_word32)((double)damageAmt * 0.5);
+							}
+
+							//damage bonus for silver and mithril
+							if (weaponType & EQUIP_WEAPON_TYPE_FLAG_SILVER)
+							{
+								damageAmt = (T_word32)((double)damageAmt * 1.15);
 							}
 						}
 
@@ -4217,26 +4271,26 @@ printf("Creature %d (%d) takes damage %d (was health %d) by %s\n",
 						if (IsPlateArmored(p_creature))
 						{
 							//axes cause more damage
-							if (IsAxeWeapon(weaponType) || IsBluntWeapon(weaponType))
+							if (IsAxeWeapon(weaponTypeLocal) || IsBluntWeapon(weaponTypeLocal))
 							{
-								damageAmt = (T_word32)((double)damageAmt * 1.25);
+								damageAmt = (T_word32)((double)damageAmt * 1.1);
 							}
 							//blades cause less damage
-							else if (IsBladeWeapon(weaponType) || IsDaggerWeapon(weaponType))
+							else if (IsBladeWeapon(weaponTypeLocal) || IsDaggerWeapon(weaponTypeLocal))
 							{
-								damageAmt = (T_word32)((double)damageAmt * 0.5);
+								damageAmt = (T_word32)((double)damageAmt * 0.9);
 							}
 						}
 
 						//Vs Large
 						if (IsLarge(p_creature))
 						{
-							if (IsAxeWeapon(weaponType))
+							if (IsLongswordWeapon(weaponTypeLocal))
 							{
-								damageAmt = (T_word32)((double)damageAmt * 1.5);
+								damageAmt = (T_word32)((double)damageAmt * 1.2);
 							}
 							//daggers cause third damage
-							else if (IsDaggerWeapon(weaponType))
+							else if (IsShortBladeWeapon(weaponTypeLocal))
 							{
 								damageAmt = (T_word32)((double)damageAmt * 0.5);
 							}
@@ -4245,12 +4299,12 @@ printf("Creature %d (%d) takes damage %d (was health %d) by %s\n",
 						if (IsLowArmor(p_creature))
 						{
 							//extra damage for blades
-							if (IsBladeWeapon(weaponType))
+							if (IsBladeWeapon(weaponTypeLocal))
 							{
-								damageAmt = (T_word32)((double)damageAmt * 1.33);
+								damageAmt = (T_word32)((double)damageAmt * 1.25);
 							}
 							//padded against blunt weapons
-							else if (IsBluntWeapon(weaponType))
+							else if (IsBluntWeapon(weaponTypeLocal))
 							{
 								damageAmt = (T_word32)((double)damageAmt * 0.75);
 							}
@@ -4278,10 +4332,23 @@ printf("Creature %d (%d) takes damage %d (was health %d) by %s\n",
                     /* Also, only bother if any damage. */
                     if (damageAmt)  {
 //printf("%d actually done.\n", damageAmt) ;  fflush(stdout) ;
-                        if (ownerID == ObjectGetServerId(PlayerGetObject()))  {
+						if (isThisPlayer)  {
                             if (!(type & EFFECT_DAMAGE_SPECIAL))
                                 StatsChangePlayerExperience(damageAmt + XP_TOHIT_BONUS);
                         }
+						else if (damageObjectType == EFFECT_ATTACKTYPE_MISC && p_creature->TimeLastTouched > SyncTimeGet())
+						{
+							//If this player is the last to touch
+							if (p_creature->LastTouchedID == ObjectGetServerId(PlayerGetObject()))
+							{
+								awardXP = damageAmt;
+
+								if (awardXP < XP_TOHIT_BONUS)
+									awardXP = XP_TOHIT_BONUS;
+
+								StatsChangePlayerExperience(awardXP);
+							}
+						}
 
                         /* Are we going to die? */
                         if (damageAmt >= p_creature->health)  {

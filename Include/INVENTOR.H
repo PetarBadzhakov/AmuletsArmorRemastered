@@ -174,6 +174,7 @@ T_void InventoryPlayWeaponHitSound(T_void);
 T_void InventoryReadItemsList(FILE *fp);
 T_void InventoryWriteItemsList(FILE *fp);
 
+T_byte8 GetEquippedWeaponTypeWithSilverFlag();
 T_byte8 GetEquippedWeaponType();
 
 /* LES: 03/28/96  Routine to update all the weapons and items */
@@ -269,6 +270,8 @@ E_Boolean InventoryDoEffect_Load(
 
 E_Boolean IsBluntWeapon(T_byte8 weaponType);
 E_Boolean IsDaggerWeapon(T_byte8 weaponType);
+E_Boolean IsLongswordWeapon(T_byte8 weaponType);
+E_Boolean IsShortBladeWeapon(T_byte8 weaponType);
 E_Boolean IsBladeWeapon(T_byte8 weaponType);
 E_Boolean IsAxeWeapon(T_byte8 weaponType);
 

@@ -247,20 +247,20 @@ T_void ClientSyncPacketEvaluate(T_syncronizePacket *p_sync)
     T_3dObject *p_playerObj ;
 
     T_syncPacketFieldsAvail fieldsAvailable ;
-    T_sword16 x,  y, z ;
-    T_word16 angle ;
+    T_sword16 x = 0, y = 0, z = 0 ;
+    T_word16 angle = 0 ;
     T_syncPacketStanceAndVis stanceAndVisibility ;
-    T_playerAction actionType ;
-    T_word16 *p_actionData ;
-    T_byte8 *p_pos ;
-    E_Boolean isPlayer ;
-    T_byte8 stance ;
-    T_byte8 visibility ;
-    T_word16 sector ;
-    T_word16 action ;
+    T_playerAction actionType = 0 ;
+    T_word16 *p_actionData = NULL ;
+    T_byte8 *p_pos = NULL ;
+    E_Boolean isPlayer = FALSE  ;
+    T_byte8 stance = 0 ;
+    T_byte8 visibility = 0 ;
+    T_word16 sector = 0 ;
+    T_word16 action = 0 ;
 //    T_objMoveStruct oldObjMove ;
-    T_sword16 lastX, lastY, lastZ ;
-    T_word16 playerNum ;
+    T_sword16 lastX = 0, lastY = 0, lastZ = 0 ;
+    T_word16 playerNum = 0 ;
 
     DebugRoutine("ClientSyncPacketEvaluate") ;
     DebugCheck(p_sync != NULL) ;

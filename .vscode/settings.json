@@ -1,5 +1,11 @@
 {
     "files.associations": {
-        "INVENTOR.C": "cpp"
+        "INVENTOR.C": "cpp",
+        "KEYMAP.C": "cpp",
+        "FORM.C": "cpp",
+        "OBJGEN.C": "cpp",
+        "3D_VIEW.C": "cpp",
+        "3D_TRIG.C": "cpp",
+        "CSYNCPCK.C": "cpp"
     }
 }

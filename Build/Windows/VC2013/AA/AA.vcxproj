@@ -57,7 +57,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LibraryPath>..\..\..\..\Lib\SDL-1.2.15\lib\x86;..\..\..\..\Lib\SDL_net-1.2.8\lib\x86;$(LibraryPath)</LibraryPath>
     <LinkIncremental>true</LinkIncremental>
-    <!-- Keep true for faster linking in Debug -->
     <IncludePath>$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;..\..\..\..\Lib\SDL_net-1.2.8\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Multiplayer|Win32'">
@@ -68,71 +67,49 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LibraryPath>..\..\..\..\Lib\SDL-1.2.15\lib\x86;..\..\..\..\Lib\SDL_net-1.2.8\lib\x86;$(LibraryPath)</LibraryPath>
     <LinkIncremental>true</LinkIncremental>
-    <!-- Note: Release usually has false/Default here, but keeping your setting -->
     <IncludePath>..\..\..\..\Lib\SDL_net-1.2.8\include;$(IncludePath)</IncludePath>
     <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
-  <!-- =================== DEBUG CONFIGURATION (Modified for Max Debugging) =================== -->
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <!-- /Od: Disable optimizations -->
       <AdditionalIncludeDirectories>..\..\..\..\Include;..\..\..\..\Lib\SDL-1.2.15\include;..\..\..\..\Lib\SDL_net-1.2.8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <StringPooling>false</StringPooling>
-      <!-- /GF-: Disable string pooling -->
       <ExceptionHandling>Sync</ExceptionHandling>
-      <!-- /EHsc: Standard C++ exceptions -->
       <SmallerTypeCheck>false</SmallerTypeCheck>
-      <!-- Keep false, /RTCc is deprecated -->
       <StructMemberAlignment>1Byte</StructMemberAlignment>
-      <!-- /Zp1: Keep project-specific alignment -->
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <!-- /Zi: Generate PDB for debugging -->
       <CompileAsManaged>false</CompileAsManaged>
       <TreatWarningAsError>false</TreatWarningAsError>
-      <!-- /WX-: Do not treat warnings as errors during debug -->
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <UseUnicodeForAssemblerListing>false</UseUnicodeForAssemblerListing>
       <PreprocessorDefinitions>_DEBUG;_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions);WIN32;NO_ASSEMBLY</PreprocessorDefinitions>
-      <!-- Added _DEBUG -->
       <MinimalRebuild>false</MinimalRebuild>
-      <!-- /Gm-: Disable minimal rebuild for maximum correctness -->
       <FunctionLevelLinking>false</FunctionLevelLinking>
-      <!-- /Gy-: Disable function-level linking -->
       <FloatingPointExceptions>false</FloatingPointExceptions>
-      <!-- Default -->
       <CreateHotpatchableImage>false</CreateHotpatchableImage>
       <BrowseInformation>false</BrowseInformation>
-      <!-- /FR-: Disable browse info generation -->
       <ShowIncludes>false</ShowIncludes>
       <DisableSpecificWarnings>4200;4100;4996</DisableSpecificWarnings>
-      <!-- Keep project-specific warning disables -->
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <!-- /MDd: Use Debug DLL CRT -->
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <!-- /RTC1: Enable comprehensive runtime checks -->
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
-      <!-- /Ob0: Disable inlining (implied by /Od) -->
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <!-- /DEBUG: Generate debug info -->
       <ShowProgress>NotSet</ShowProgress>
       <GenerateMapFile>true</GenerateMapFile>
-      <!-- Keep map file generation for debug analysis -->
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalDependencies>kernel32.lib;SDL.lib;SDLmain.lib;SDL_net.lib</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
-      <!-- Default -->
+      <IgnoreSpecificDefaultLibraries>msvcrt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <NoEntryPoint>false</NoEntryPoint>
       <EntryPointSymbol>
       </EntryPointSymbol>
       <SubSystem>Console</SubSystem>
-      <!-- Keep Console subsystem for Debug -->
     </Link>
   </ItemDefinitionGroup>
-  <!-- =================== DEBUG MULTIPLAYER CONFIGURATION (Unchanged) =================== -->
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Multiplayer|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -175,7 +152,6 @@
       <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
-  <!-- =================== RELEASE CONFIGURATION (Unchanged) =================== -->
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <WarningLevel>Level1</WarningLevel>
@@ -227,13 +203,11 @@
       </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
-  <!-- =================== SOURCE FILES (Removed per-file Debug overrides) =================== -->
   <ItemGroup>
     <ClCompile Include="..\..\..\..\Source\3D_COLLI.C" />
     <ClCompile Include="..\..\..\..\Source\3D_IO.C" />
     <ClCompile Include="..\..\..\..\Source\3D_TRIG.C" />
     <ClCompile Include="..\..\..\..\Source\3D_VIEW.C">
-      <!-- Removed Debug specific Optimization/FavorSizeOrSpeed overrides -->
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug Multiplayer|Win32'">MaxSpeed</Optimization>
       <FavorSizeOrSpeed Condition="'$(Configuration)|$(Platform)'=='Debug Multiplayer|Win32'">Speed</FavorSizeOrSpeed>
     </ClCompile>
@@ -332,7 +306,6 @@
     <ClCompile Include="..\..\..\..\Source\Win32\ipx_client.cpp" />
     <ClCompile Include="direct.cpp" />
     <ClCompile Include="main.c">
-      <!-- Removed Debug specific Optimization override -->
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug Multiplayer|Win32'">Disabled</Optimization>
     </ClCompile>
     <ClCompile Include="misc.c" />
