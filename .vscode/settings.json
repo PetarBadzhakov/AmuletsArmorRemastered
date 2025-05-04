@@ -10,6 +10,12 @@
         "GRAPHICS.C": "cpp",
         "BANNER.C": "cpp",
         "VIEW.C": "cpp",
-        "STATS.C": "cpp"
+        "STATS.C": "cpp",
+        "3D_IO.C": "cpp",
+        "BUTTON.C": "cpp",
+        "MOUSEMOD.C": "cpp",
+        "OVERHEAD.C": "cpp",
+        "TEXT.C": "cpp",
+        "TXTBOX.C": "cpp"
     }
 }
