@@ -16,6 +16,9 @@
         "MOUSEMOD.C": "cpp",
         "OVERHEAD.C": "cpp",
         "TEXT.C": "cpp",
-        "TXTBOX.C": "cpp"
+        "TXTBOX.C": "cpp",
+        "KEYBOARD.C": "cpp",
+        "CONVBBMO.C": "cpp",
+        "3D_COLLI.C": "cpp"
     }
 }

@@ -818,7 +818,7 @@ T_void GrDisplayScreen(T_void)
     DebugCheck(G_ActiveScreen != GRAPHICS_ACTUAL_SCREEN) ;
 
     /* Memcpy is usually written to be VERY fast by the C compiler/library. */
-    memcpy(GRAPHICS_ACTUAL_SCREEN, G_ActiveScreen, (T_word16)(SCREEN_WIDTH*SCREEN_HEIGHT)) ;
+    memcpy(GRAPHICS_ACTUAL_SCREEN, G_ActiveScreen, SCREEN_WIDTH*SCREEN_HEIGHT) ;
 
     DebugEnd() ;
 }

@@ -91,13 +91,11 @@ T_void ViewInitialize(T_void)
     View3dInitialize() ;
     ObjectsInitialize() ;
 
-#if (SCREEN_WIDTH==320)
-    View3dSetSize(312, 148) ;
-#elif (SCREEN_WIDTH==640)
-    View3dSetSize(312*2, 148*2) ;
-#else
-    View3dSetSize(312*2*2, 198*2*2) ;
-#endif
+    /* resolution-agnostic 3D view size, original was 312×148 at 320×200 */
+    View3dSetSize(
+        (312 * SCREEN_WIDTH)  / 320,
+        (148 * SCREEN_HEIGHT) / 200
+    );
 
     MapInitialize() ;
     OverheadInitialize() ;
