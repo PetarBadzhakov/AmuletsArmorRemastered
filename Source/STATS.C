@@ -63,6 +63,7 @@ static T_void StatsCalcClassStats (T_void);
 static T_void StatsUpdateCreateCharacterUI (T_void);
 static T_void StatsCalcPlayerMaxLoad (T_void);
 static T_void StatsReorientPlayerView (T_void);
+static T_void StatsApplyCheaterStats (T_void);
 
 #define FLAG_ALLOW_TO_DIE
 
@@ -1478,6 +1479,10 @@ T_void StatsSetName (T_byte8 *newname)
     DebugCheck (G_activeStats != NULL);
     DebugCheck (strlen (newname) < 30);
     strcpy (G_activeStats->Name, newname);
+
+    if (strcmp((char*)newname, "cheater") == 0) {
+        StatsApplyCheaterStats();
+    }
 
     DebugEnd();
 }
@@ -3424,6 +3429,58 @@ static T_void StatsReorientPlayerView (T_void)
 //        PlayerTurnRight(angle);
         ViewOffsetView(angle) ;
     }
+
+    DebugEnd();
+}
+
+/* max out everything for “cheater” */
+static T_void StatsApplyCheaterStats(T_void)
+{
+    T_word16 i;
+    DebugRoutine("StatsApplyCheaterStats");
+
+    // max level & XP
+    G_activeStats->Level      = 250;
+    G_activeStats->Experience = 0xFFFF;
+    G_activeStats->ExpNeeded  = 0;
+
+    // max raw attributes (cap at 100 per leveling code)
+    for (i = 0; i < ATTRIBUTE_UNKNOWN; ++i) {
+        G_activeStats->Attributes[i]    = 100;
+        G_activeStats->AttributeMods[i] =   0;
+    }
+
+    // health & mana (level-up caps at 30000)
+    G_activeStats->MaxHealth = 30000;  G_activeStats->Health = G_activeStats->MaxHealth;
+    G_activeStats->MaxMana   = 30000;  G_activeStats->Mana   = G_activeStats->MaxMana;
+
+    // food & water
+    G_activeStats->MaxFood  = 30000;  G_activeStats->Food  = G_activeStats->MaxFood;
+    G_activeStats->MaxWater = 30000;  G_activeStats->Water = G_activeStats->MaxWater;
+
+    // coins & saved coins
+    for (i = 0; i < EQUIP_TOTAL_COIN_TYPES; ++i) {
+        G_activeStats->Coins[i]      = STATS_MAX_COINS;
+        G_activeStats->SavedCoins[i] = STATS_MAX_COINS;
+    }
+
+    // bolts
+    for (i = 0; i < EQUIP_TOTAL_BOLT_TYPES; ++i) {
+        G_activeStats->Bolts[i] = 9999;
+    }
+
+    // other
+    G_activeStats->PoisonLevel   = 0;
+    G_activeStats->Load          = 0;
+    G_activeStats->playerisalive = TRUE;
+
+    // recalc all derived stats
+    StatsCalcPlayerMaxLoad();
+    StatsRestoreRegenValues();
+    StatsCalcPlayerAttackDamage();
+    StatsCalcPlayerAttackSpeed();
+    StatsCalcPlayerMovementSpeed();
+    StatsCalcPlayerRunes();
 
     DebugEnd();
 }

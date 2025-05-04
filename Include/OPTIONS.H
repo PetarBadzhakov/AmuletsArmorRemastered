@@ -20,7 +20,7 @@
 #define SCREEN_HEIGHT 200
 #elif 0
 #define SCREEN_WIDTH 640
-#define SCREEN_HEIGHT 480
+#define SCREEN_HEIGHT 400
 #else
 #define SCREEN_WIDTH 1280
 #define SCREEN_HEIGHT 960

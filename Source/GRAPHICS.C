@@ -92,9 +92,10 @@ static T_void IResetLeftsAndRights(T_void) ;
 static T_byte8 G_lastPalette[256][3] ;
 
 #if (SCREEN_WIDTH==320)
-#define PIXEL_OFFSET_Y(y)  ((y<<6)+(y<<8))
-#else
 #define PIXEL_OFFSET_Y(y)  ((y)*(SCREEN_WIDTH))
+#else
+#define PIXEL_OFFSET_Y(y)  ((y<<6)+(y<<8))
+//#define PIXEL_OFFSET_Y(y)  ((y)*(SCREEN_WIDTH))
 #endif
 
 /*-------------------------------------------------------------------------*

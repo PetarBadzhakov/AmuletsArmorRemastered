@@ -6,6 +6,10 @@
         "OBJGEN.C": "cpp",
         "3D_VIEW.C": "cpp",
         "3D_TRIG.C": "cpp",
-        "CSYNCPCK.C": "cpp"
+        "CSYNCPCK.C": "cpp",
+        "GRAPHICS.C": "cpp",
+        "BANNER.C": "cpp",
+        "VIEW.C": "cpp",
+        "STATS.C": "cpp"
     }
 }
