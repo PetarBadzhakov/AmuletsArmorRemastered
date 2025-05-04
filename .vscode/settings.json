@@ -19,6 +19,9 @@
         "TXTBOX.C": "cpp",
         "KEYBOARD.C": "cpp",
         "CONVBBMO.C": "cpp",
-        "3D_COLLI.C": "cpp"
+        "3D_COLLI.C": "cpp",
+        "PROMPT.C": "cpp",
+        "HARDFORM.C": "cpp",
+        "CLIENT.C": "cpp"
     }
 }
